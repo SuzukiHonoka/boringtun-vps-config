@@ -1,15 +1,14 @@
 [Unit]
-Description=BoringTUN
+Description=BoringTun Interface Daemon
 Before=network-pre.target
 
 [Service]
 Type=simple
-User=root
-WorkingDirectory=/root
-ExecStart=/root/.cargo/bin/boringtun --disable-multi-queue -f wg0
-ExecStartPost=/usr/bin/wg setconf wg0 /etc/wireguard/wg0.conf
+DynamicUser=no
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE
+ExecStart=/usr/bin/boringtun-cli --disable-drop-privileges -f wg0
 Restart=on-failure
-# Other Restart options: or always, on-abort, etc
 
 [Install]
 WantedBy=multi-user.target
