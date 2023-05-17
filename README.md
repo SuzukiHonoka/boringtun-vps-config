@@ -3,6 +3,8 @@ Setting up wireguard on a tiny VPS can be difficult, especially if you're on Ope
 
 For the entirety of this guide, we'll be using 172.16.1.0/24. Please select a different subnet. Also note that any reference to venet0 is the main interface for the machine (like eth0 would usually be). The IP assigned to that interface shall be shown as 10.1.1.1. Change this to your own IP in the files. Port 13200 will be used as the UDP listening port for boringtun.
 
+Note that this modified version requires you running on **linux 5.0+ kernel**.
+
 # Dependencies
 Before you start, you should:
 
@@ -12,10 +14,8 @@ Before you start, you should:
 * Install iptables-persistent
 
 ## Setting up wireguard
-
 ```bash
-sudo add-apt-repository ppa:wireguard/wireguard
-sudo apt-get install wireguard-dkms wireguard-tools
+sudo apt-get install -y --no-install-recommends wireguard wireguard-tools
 (umask 077 && printf "[Interface]\nPrivateKey = " | sudo tee /etc/wireguard/wg0.conf > /dev/null)
 wg genkey | sudo tee -a /etc/wireguard/wg0.conf | wg pubkey | sudo tee /etc/wireguard/publickey
 ```
@@ -48,28 +48,27 @@ We need to build boringtun from trunk as of 20190422. This may change, at which 
 ```bash
 git clone https://github.com/cloudflare/boringtun.git
 cd boringtun
-cargo build --bin boringtun --release
-cargo install --path .
+cargo build --bin boringtun-cli --release
+ln -s /path/to/your/boringtun-cli /usr/bin
 ```
 
 ### Allow boringtun to TUN
 
 ```bash
-setcap cap_net_admin+epi boringtun
+setcap cap_net_admin+ep boringtun
 ```
 
 Interestingly this isn't enough to get it to work on OpenVZ. If you look at the systemd script, you need `--disable-multi-queue` as well.
 
 ### Systemd and other init
-We want all this junk to work on boot.
+We want service start on boot.
 
 #### Systemd
 
-Now, add boringtun.service to /etc/systemd/system/ and perform the following:
+Now, add boringtun.service to /lib/systemd/system/ and perform the following:
 
 ```bash
-systemctl enable boringtun
-systemctl start boringtun
+systemctl enable --now boringtun
 ```
 
 #### Network Interface
